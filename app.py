@@ -20,6 +20,16 @@ STORAGE_DIR = Path("user_files")
 STORAGE_DIR.mkdir(exist_ok=True)
 
 
+def show_popup(message: str):
+    st.session_state.popup_message = message
+
+
+def render_popup():
+    message = st.session_state.pop("popup_message", None)
+    if message:
+        st.toast(message, icon="✅")
+
+
 def list_files():
     return sorted([p for p in STORAGE_DIR.iterdir() if p.is_file() and p.name != ".gitkeep"])
 
@@ -388,6 +398,27 @@ def apply_theme(theme_name: str):
             color: var(--text);
         }}
 
+        [data-testid="stToast"],
+        [data-testid="stToast"] > div,
+        div[data-testid="stToast"] {{
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text) !important;
+            box-shadow: 0 10px 30px var(--shadow) !important;
+        }}
+
+        [data-testid="stToast"] *,
+        div[data-testid="stToast"] * {{
+            color: var(--text) !important;
+            -webkit-text-fill-color: var(--text) !important;
+        }}
+
+        [data-testid="stToast"] svg,
+        div[data-testid="stToast"] svg {{
+            color: var(--accent) !important;
+            fill: var(--accent) !important;
+        }}
+
         [data-testid="stExpander"] {{
             background: var(--surface);
             border: 1px solid var(--border);
@@ -417,6 +448,7 @@ with st.sidebar:
     )
 
 apply_theme(theme)
+render_popup()
 
 st.markdown(
     """
@@ -480,7 +512,7 @@ if action == "Create File":
         else:
             try:
                 path.write_text(content, encoding="utf-8")
-                st.success(f"File '{path.name}' created successfully.")
+                show_popup(f"File '{path.name}' created successfully.")
                 st.rerun()
             except Exception as err:
                 st.error(f"An error occurred: {err}")
@@ -536,7 +568,7 @@ elif action == "Update File":
                 else:
                     try:
                         path.rename(new_path)
-                        st.success(f"Renamed to '{new_path.name}' successfully.")
+                        show_popup(f"Renamed to '{new_path.name}' successfully.")
                         st.rerun()
                     except Exception as err:
                         st.error(f"An error occurred: {err}")
@@ -547,7 +579,7 @@ elif action == "Update File":
                 try:
                     with open(path, "a", encoding="utf-8") as fs:
                         fs.write("\n" + add_text)
-                    st.success("Content appended successfully.")
+                    show_popup("Content appended successfully.")
                     st.rerun()
                 except Exception as err:
                     st.error(f"An error occurred: {err}")
@@ -557,7 +589,7 @@ elif action == "Update File":
             if st.button("Overwrite", type="primary"):
                 try:
                     path.write_text(new_text, encoding="utf-8")
-                    st.success("File overwritten successfully.")
+                    show_popup("File overwritten successfully.")
                     st.rerun()
                 except Exception as err:
                     st.error(f"An error occurred: {err}")
@@ -576,7 +608,7 @@ elif action == "Delete File":
         if st.button("Delete File", type="primary", disabled=not confirm):
             try:
                 (STORAGE_DIR / chosen).unlink()
-                st.success(f"'{chosen}' deleted successfully.")
+                show_popup(f"'{chosen}' deleted successfully.")
                 st.rerun()
             except Exception as err:
                 st.error(f"An error occurred: {err}")
