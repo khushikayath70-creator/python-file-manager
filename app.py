@@ -11,7 +11,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="File Manager Studio",
-    page_icon="FM",
+    page_icon=":material/folder:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -21,7 +21,7 @@ STORAGE_DIR.mkdir(exist_ok=True)
 
 
 def list_files():
-    return sorted([p for p in STORAGE_DIR.iterdir() if p.is_file()])
+    return sorted([p for p in STORAGE_DIR.iterdir() if p.is_file() and p.name != ".gitkeep"])
 
 
 def human_size(num_bytes: int) -> str:
@@ -68,10 +68,16 @@ def apply_theme(theme_name: str):
             "muted": "#adb5c3",
             "soft": "#8892a3",
             "accent": "#7dd3fc",
+            "accent_text": "#0f172a",
             "primary": "#f4f6fb",
             "primary_text": "#101114",
             "input": "#12141a",
+            "input_focus": "#263244",
             "shadow": "rgba(0, 0, 0, 0.28)",
+            "success_bg": "#123524",
+            "warning_bg": "#3a2b10",
+            "error_bg": "#3b1518",
+            "info_bg": "#102b3a",
         }
     else:
         colors = {
@@ -85,10 +91,16 @@ def apply_theme(theme_name: str):
             "muted": "#566173",
             "soft": "#7a8494",
             "accent": "#2563eb",
+            "accent_text": "#ffffff",
             "primary": "#1d2430",
             "primary_text": "#ffffff",
             "input": "#ffffff",
+            "input_focus": "#edf4ff",
             "shadow": "rgba(20, 24, 33, 0.08)",
+            "success_bg": "#eaf7ef",
+            "warning_bg": "#fff7e6",
+            "error_bg": "#fdecec",
+            "info_bg": "#eaf4ff",
         }
 
     st.markdown(
@@ -105,15 +117,27 @@ def apply_theme(theme_name: str):
             --muted: {colors["muted"]};
             --soft: {colors["soft"]};
             --accent: {colors["accent"]};
+            --accent-text: {colors["accent_text"]};
             --primary: {colors["primary"]};
             --primary-text: {colors["primary_text"]};
             --input: {colors["input"]};
+            --input-focus: {colors["input_focus"]};
             --shadow: {colors["shadow"]};
+            --success-bg: {colors["success_bg"]};
+            --warning-bg: {colors["warning_bg"]};
+            --error-bg: {colors["error_bg"]};
+            --info-bg: {colors["info_bg"]};
         }}
 
+        html,
+        body,
         .stApp {{
             background: linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-2) 100%);
             color: var(--text);
+        }}
+
+        header[data-testid="stHeader"] {{
+            background: transparent;
         }}
 
         .block-container {{
@@ -191,6 +215,10 @@ def apply_theme(theme_name: str):
             border-right: 1px solid var(--border);
         }}
 
+        section[data-testid="stSidebar"] * {{
+            color: var(--text);
+        }}
+
         h1, h2, h3, h4, h5, h6,
         p, label, span,
         [data-testid="stMarkdownContainer"],
@@ -204,23 +232,102 @@ def apply_theme(theme_name: str):
             color: var(--muted);
         }}
 
-        div[data-baseweb="input"] > div,
-        div[data-baseweb="textarea"] textarea,
-        div[data-baseweb="select"] > div {{
-            background-color: var(--input);
+        code {{
+            color: var(--accent);
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 5px;
+        }}
+
+        section[data-testid="stSidebar"] code {{
             color: var(--text);
+            background: var(--surface-2);
             border-color: var(--border);
         }}
 
-        textarea,
-        input {{
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="textarea"] > div,
+        div[data-baseweb="select"] > div {{
+            background-color: var(--input);
+            border-color: var(--border);
+        }}
+
+        div[data-baseweb="input"] input,
+        div[data-baseweb="textarea"] textarea,
+        div[data-baseweb="select"] span,
+        div[data-baseweb="select"] input,
+        div[data-baseweb="select"] div {{
             color: var(--text) !important;
+            -webkit-text-fill-color: var(--text) !important;
+        }}
+
+        div[data-baseweb="input"] > div:focus-within,
+        div[data-baseweb="textarea"] > div:focus-within,
+        div[data-baseweb="select"] > div:focus-within {{
+            background-color: var(--input-focus);
+            border-color: var(--border);
+            box-shadow: 0 0 0 1px var(--accent);
+        }}
+
+        textarea,
+        input,
+        [data-baseweb="select"] input {{
+            color: var(--text) !important;
+            -webkit-text-fill-color: var(--text) !important;
             caret-color: var(--accent);
         }}
 
         textarea:disabled {{
             -webkit-text-fill-color: var(--text);
             opacity: 1;
+        }}
+
+        input::placeholder,
+        textarea::placeholder {{
+            color: var(--soft) !important;
+            opacity: 1;
+        }}
+
+        [data-baseweb="radio"] div {{
+            color: var(--text);
+        }}
+
+        [data-baseweb="radio"] [aria-checked="true"] div:first-child {{
+            border-color: var(--accent);
+            background-color: var(--accent);
+        }}
+
+        div[data-baseweb="popover"],
+        div[data-baseweb="popover"] > div,
+        div[data-baseweb="menu"],
+        ul[role="listbox"],
+        div[role="listbox"] {{
+            background: var(--surface) !important;
+            border-color: var(--border) !important;
+            color: var(--text) !important;
+        }}
+
+        div[role="option"],
+        li[role="option"],
+        ul[role="listbox"] li,
+        div[data-baseweb="menu"] li {{
+            background: var(--surface) !important;
+            color: var(--text) !important;
+        }}
+
+        div[role="option"] *,
+        li[role="option"] *,
+        ul[role="listbox"] li *,
+        div[data-baseweb="menu"] li * {{
+            color: var(--text) !important;
+        }}
+
+        div[role="option"]:hover,
+        li[role="option"]:hover,
+        div[role="option"][aria-selected="true"],
+        li[role="option"][aria-selected="true"] {{
+            background: var(--surface-2) !important;
         }}
 
         div.stButton > button {{
@@ -231,10 +338,64 @@ def apply_theme(theme_name: str):
             font-weight: 600;
         }}
 
+        div.stButton > button *,
+        div.stButton > button p,
+        div.stButton > button span {{
+            color: var(--text) !important;
+        }}
+
         div.stButton > button[kind="primary"] {{
             background: var(--primary);
-            color: var(--primary-text);
+            color: var(--primary-text) !important;
             border: 1px solid var(--primary);
+        }}
+
+        div.stButton > button[kind="primary"] *,
+        div.stButton > button[kind="primary"] p,
+        div.stButton > button[kind="primary"] span {{
+            color: var(--primary-text) !important;
+        }}
+
+        div.stButton > button:hover {{
+            border-color: var(--accent);
+            color: var(--accent) !important;
+        }}
+
+        div.stButton > button:hover *,
+        div.stButton > button:hover p,
+        div.stButton > button:hover span {{
+            color: var(--accent) !important;
+        }}
+
+        div.stButton > button[kind="primary"]:hover {{
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--accent-text) !important;
+        }}
+
+        div.stButton > button[kind="primary"]:hover *,
+        div.stButton > button[kind="primary"]:hover p,
+        div.stButton > button[kind="primary"]:hover span {{
+            color: var(--accent-text) !important;
+        }}
+
+        [data-testid="stAlert"] {{
+            border: 1px solid var(--border);
+            color: var(--text);
+        }}
+
+        [data-testid="stAlert"] * {{
+            color: var(--text);
+        }}
+
+        [data-testid="stExpander"] {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }}
+
+        [data-testid="stExpander"] summary {{
+            color: var(--text);
         }}
 
         hr {{
@@ -425,17 +586,52 @@ elif action == "Browse All Files":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("All files")
 
+    if "expanded_files" not in st.session_state:
+        st.session_state.expanded_files = set()
+
     if not files:
         st.info("No files yet. Create one to see it listed here.")
     else:
         for f in files:
-            fc1, fc2, fc3 = st.columns([5, 2, 2])
+            size_txt = human_size(f.stat().st_size)
+            time_txt = datetime.fromtimestamp(f.stat().st_mtime).strftime("%d %b %Y, %H:%M")
+            is_open = f.name in st.session_state.expanded_files
+
+            fc0, fc1, fc2, fc3 = st.columns([0.4, 4.6, 2, 2])
+            with fc0:
+                arrow = "▾" if is_open else "▸"
+                if st.button(arrow, key=f"toggle_{f.name}"):
+                    if is_open:
+                        st.session_state.expanded_files.discard(f.name)
+                    else:
+                        st.session_state.expanded_files.add(f.name)
+                    st.rerun()
             with fc1:
-                st.markdown(f"**{f.name}**")
+                if st.button(f.name, key=f"toggle_name_{f.name}"):
+                    if is_open:
+                        st.session_state.expanded_files.discard(f.name)
+                    else:
+                        st.session_state.expanded_files.add(f.name)
+                    st.rerun()
             with fc2:
-                st.caption(human_size(f.stat().st_size))
+                st.caption(size_txt)
             with fc3:
-                st.caption(datetime.fromtimestamp(f.stat().st_mtime).strftime("%d %b %Y, %H:%M"))
+                st.caption(time_txt)
+
+            if is_open:
+                try:
+                    file_content = f.read_text(encoding="utf-8")
+                    st.text_area(
+                        "Content",
+                        file_content,
+                        height=200,
+                        disabled=True,
+                        key=f"preview_{f.name}",
+                        label_visibility="collapsed",
+                    )
+                except Exception as err:
+                    st.error(f"Could not open file: {err}")
+
             st.divider()
     st.markdown("</div>", unsafe_allow_html=True)
 
