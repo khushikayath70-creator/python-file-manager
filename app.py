@@ -1,19 +1,17 @@
 """
 File Manager Studio
-A clean, premium Streamlit UI for local file operations
-(Create / Read / Update / Delete) built on top of pathlib + os.
+A clean Streamlit UI for local file operations.
 """
 
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import streamlit as st
 
-# ------------------------------------------------------------------
-# App config
-# ------------------------------------------------------------------
+
 st.set_page_config(
     page_title="File Manager Studio",
-    page_icon="🗂️",
+    page_icon="FM",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -21,96 +19,7 @@ st.set_page_config(
 STORAGE_DIR = Path("user_files")
 STORAGE_DIR.mkdir(exist_ok=True)
 
-# ------------------------------------------------------------------
-# Styling — light, premium, well structured
-# ------------------------------------------------------------------
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background: linear-gradient(180deg, #fafafa 0%, #f4f5f7 100%);
-    }
-    .block-container {
-        padding-top: 2rem;
-        max-width: 1100px;
-    }
-    .hero {
-        padding: 28px 32px;
-        border-radius: 18px;
-        background: linear-gradient(135deg, #ffffff 0%, #f7f8fa 100%);
-        border: 1px solid #eaeaec;
-        box-shadow: 0 4px 24px rgba(20, 20, 30, 0.04);
-        margin-bottom: 28px;
-    }
-    .hero h1 {
-        font-size: 1.9rem;
-        font-weight: 700;
-        margin-bottom: 4px;
-        color: #1a1a1f;
-    }
-    .hero p {
-        color: #6b6b76;
-        font-size: 0.98rem;
-        margin: 0;
-    }
-    .card {
-        background: #ffffff;
-        border: 1px solid #eceef1;
-        border-radius: 16px;
-        padding: 24px 26px;
-        box-shadow: 0 2px 12px rgba(20, 20, 30, 0.03);
-        margin-bottom: 20px;
-    }
-    .stat-box {
-        background: #ffffff;
-        border: 1px solid #eceef1;
-        border-radius: 14px;
-        padding: 16px 20px;
-        text-align: center;
-        box-shadow: 0 2px 10px rgba(20, 20, 30, 0.03);
-    }
-    .stat-num {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: #2b2b33;
-    }
-    .stat-label {
-        font-size: 0.8rem;
-        color: #8a8a94;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-    section[data-testid="stSidebar"] {
-        background: #ffffff;
-        border-right: 1px solid #ececee;
-    }
-    div.stButton > button {
-        border-radius: 10px;
-        font-weight: 600;
-        border: 1px solid #e2e2e6;
-    }
-    div.stButton > button[kind="primary"] {
-        background: #1f1f27;
-        color: white;
-        border: none;
-    }
-    .file-pill {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 999px;
-        background: #f1f1f4;
-        color: #4a4a52;
-        font-size: 0.78rem;
-        margin-right: 6px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
-# ------------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------------
 def list_files():
     return sorted([p for p in STORAGE_DIR.iterdir() if p.is_file()])
 
@@ -123,27 +32,241 @@ def human_size(num_bytes: int) -> str:
     return f"{num_bytes:.1f} TB"
 
 
-def refresh():
-    st.rerun()
+def safe_file_path(name: str):
+    clean_name = name.strip()
+
+    if not clean_name:
+        return None, "Please enter a file name."
+
+    path = STORAGE_DIR / clean_name
+    storage_root = STORAGE_DIR.resolve()
+
+    try:
+        resolved_path = path.resolve()
+        resolved_path.relative_to(storage_root)
+    except ValueError:
+        return None, "Use a simple file name inside user_files only."
+
+    if path.name in {"", ".", ".."}:
+        return None, "Please enter a valid file name."
+
+    return path, None
 
 
-# ------------------------------------------------------------------
-# Hero header
-# ------------------------------------------------------------------
+def apply_theme(theme_name: str):
+    is_dark = theme_name == "Dark"
+
+    if is_dark:
+        colors = {
+            "app_bg": "#101114",
+            "app_bg_2": "#17191f",
+            "surface": "#1d2027",
+            "surface_2": "#242832",
+            "sidebar": "#16181e",
+            "border": "#343946",
+            "text": "#f4f6fb",
+            "muted": "#adb5c3",
+            "soft": "#8892a3",
+            "accent": "#7dd3fc",
+            "primary": "#f4f6fb",
+            "primary_text": "#101114",
+            "input": "#12141a",
+            "shadow": "rgba(0, 0, 0, 0.28)",
+        }
+    else:
+        colors = {
+            "app_bg": "#f7f8fb",
+            "app_bg_2": "#eef1f5",
+            "surface": "#ffffff",
+            "surface_2": "#f4f6f8",
+            "sidebar": "#ffffff",
+            "border": "#e0e4ea",
+            "text": "#1d2430",
+            "muted": "#566173",
+            "soft": "#7a8494",
+            "accent": "#2563eb",
+            "primary": "#1d2430",
+            "primary_text": "#ffffff",
+            "input": "#ffffff",
+            "shadow": "rgba(20, 24, 33, 0.08)",
+        }
+
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+            --app-bg: {colors["app_bg"]};
+            --app-bg-2: {colors["app_bg_2"]};
+            --surface: {colors["surface"]};
+            --surface-2: {colors["surface_2"]};
+            --sidebar: {colors["sidebar"]};
+            --border: {colors["border"]};
+            --text: {colors["text"]};
+            --muted: {colors["muted"]};
+            --soft: {colors["soft"]};
+            --accent: {colors["accent"]};
+            --primary: {colors["primary"]};
+            --primary-text: {colors["primary_text"]};
+            --input: {colors["input"]};
+            --shadow: {colors["shadow"]};
+        }}
+
+        .stApp {{
+            background: linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-2) 100%);
+            color: var(--text);
+        }}
+
+        .block-container {{
+            padding-top: 2rem;
+            max-width: 1100px;
+        }}
+
+        .hero,
+        .card,
+        .stat-box {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px var(--shadow);
+        }}
+
+        .hero {{
+            padding: 28px 32px;
+            border-radius: 8px;
+            margin-bottom: 28px;
+        }}
+
+        .hero h1 {{
+            color: var(--text);
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: 0;
+            margin: 0 0 6px 0;
+        }}
+
+        .hero p {{
+            color: var(--muted);
+            font-size: 0.98rem;
+            margin: 0;
+        }}
+
+        .card {{
+            border-radius: 8px;
+            padding: 24px 26px;
+            margin-bottom: 20px;
+        }}
+
+        .stat-box {{
+            border-radius: 8px;
+            padding: 16px 20px;
+            text-align: center;
+        }}
+
+        .stat-num {{
+            color: var(--text);
+            font-size: 1.6rem;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }}
+
+        .stat-label {{
+            color: var(--soft);
+            font-size: 0.8rem;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }}
+
+        .file-pill {{
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--surface-2);
+            color: var(--muted);
+            border: 1px solid var(--border);
+            font-size: 0.78rem;
+            margin: 0 6px 6px 0;
+        }}
+
+        section[data-testid="stSidebar"] {{
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+        }}
+
+        h1, h2, h3, h4, h5, h6,
+        p, label, span,
+        [data-testid="stMarkdownContainer"],
+        [data-testid="stCaptionContainer"] {{
+            color: var(--text);
+        }}
+
+        [data-testid="stCaptionContainer"],
+        .st-emotion-cache-1v0mbdj,
+        small {{
+            color: var(--muted);
+        }}
+
+        div[data-baseweb="input"] > div,
+        div[data-baseweb="textarea"] textarea,
+        div[data-baseweb="select"] > div {{
+            background-color: var(--input);
+            color: var(--text);
+            border-color: var(--border);
+        }}
+
+        textarea,
+        input {{
+            color: var(--text) !important;
+            caret-color: var(--accent);
+        }}
+
+        textarea:disabled {{
+            -webkit-text-fill-color: var(--text);
+            opacity: 1;
+        }}
+
+        div.stButton > button {{
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            font-weight: 600;
+        }}
+
+        div.stButton > button[kind="primary"] {{
+            background: var(--primary);
+            color: var(--primary-text);
+            border: 1px solid var(--primary);
+        }}
+
+        hr {{
+            border-color: var(--border);
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+with st.sidebar:
+    st.markdown("### Display")
+    theme = st.radio(
+        "Theme",
+        ["Light", "Dark"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+apply_theme(theme)
+
 st.markdown(
     """
     <div class="hero">
-        <h1>🗂️ File Manager Studio</h1>
-        <p>Create, read, update and delete files — a clean interface over Python's
-        <code>pathlib</code> &amp; <code>os</code> file handling basics.</p>
+        <h1>File Manager Studio</h1>
+        <p>Create, read, update and delete files from a clean Python Streamlit interface.</p>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# ------------------------------------------------------------------
-# Stats row
-# ------------------------------------------------------------------
 files = list_files()
 total_size = sum(f.stat().st_size for f in files) if files else 0
 
@@ -161,7 +284,7 @@ with c2:
         unsafe_allow_html=True,
     )
 with c3:
-    latest = max(files, key=lambda f: f.stat().st_mtime).name if files else "—"
+    latest = max(files, key=lambda f: f.stat().st_mtime).name if files else "-"
     st.markdown(
         f'<div class="stat-box"><div class="stat-num" style="font-size:1.1rem;">{latest}</div>'
         f'<div class="stat-label">Last Modified</div></div>',
@@ -170,22 +293,17 @@ with c3:
 
 st.write("")
 
-# ------------------------------------------------------------------
-# Sidebar navigation
-# ------------------------------------------------------------------
+st.sidebar.markdown("---")
 st.sidebar.markdown("### Operations")
 action = st.sidebar.radio(
     "Choose an action",
-    ["📄 Create File", "📖 Read File", "✏️ Update File", "🗑️ Delete File", "📁 Browse All Files"],
+    ["Create File", "Read File", "Update File", "Delete File", "Browse All Files"],
     label_visibility="collapsed",
 )
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Working directory: `{STORAGE_DIR.resolve().name}/`")
 
-# ------------------------------------------------------------------
-# CREATE
-# ------------------------------------------------------------------
-if action == "📄 Create File":
+if action == "Create File":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Create a new file")
 
@@ -193,24 +311,21 @@ if action == "📄 Create File":
     content = st.text_area("File content", placeholder="Write something...", height=180)
 
     if st.button("Create File", type="primary"):
-        if not name.strip():
-            st.warning("Please enter a file name.")
+        path, error = safe_file_path(name)
+        if error:
+            st.warning(error)
+        elif path.exists():
+            st.error(f"'{path.name}' already exists. Choose a different name.")
         else:
-            path = STORAGE_DIR / name
-            if path.exists():
-                st.error(f"'{name}' already exists. Choose a different name.")
-            else:
-                try:
-                    path.write_text(content)
-                    st.success(f"File '{name}' created successfully ✅")
-                except Exception as err:
-                    st.error(f"An error occurred: {err}")
+            try:
+                path.write_text(content, encoding="utf-8")
+                st.success(f"File '{path.name}' created successfully.")
+                st.rerun()
+            except Exception as err:
+                st.error(f"An error occurred: {err}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------
-# READ
-# ------------------------------------------------------------------
-elif action == "📖 Read File":
+elif action == "Read File":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Read a file")
 
@@ -220,7 +335,7 @@ elif action == "📖 Read File":
         chosen = st.selectbox("Select a file", [f.name for f in files])
         path = STORAGE_DIR / chosen
         try:
-            content = path.read_text()
+            content = path.read_text(encoding="utf-8")
             st.markdown(
                 f'<span class="file-pill">{human_size(path.stat().st_size)}</span>'
                 f'<span class="file-pill">Modified: '
@@ -233,10 +348,7 @@ elif action == "📖 Read File":
             st.error(f"An error occurred: {err}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------
-# UPDATE
-# ------------------------------------------------------------------
-elif action == "✏️ Update File":
+elif action == "Update File":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Update a file")
 
@@ -255,15 +367,16 @@ elif action == "✏️ Update File":
         if op == "Rename":
             new_name = st.text_input("New file name")
             if st.button("Rename", type="primary"):
-                new_path = STORAGE_DIR / new_name
-                if not new_name.strip():
-                    st.warning("Enter a new name.")
+                new_path, error = safe_file_path(new_name)
+                if error:
+                    st.warning(error)
                 elif new_path.exists():
-                    st.error(f"'{new_name}' already exists.")
+                    st.error(f"'{new_path.name}' already exists.")
                 else:
                     try:
                         path.rename(new_path)
-                        st.success(f"Renamed to '{new_name}' successfully ✅")
+                        st.success(f"Renamed to '{new_path.name}' successfully.")
+                        st.rerun()
                     except Exception as err:
                         st.error(f"An error occurred: {err}")
 
@@ -271,9 +384,10 @@ elif action == "✏️ Update File":
             add_text = st.text_area("Text to append", height=140)
             if st.button("Append", type="primary"):
                 try:
-                    with open(path, "a") as fs:
+                    with open(path, "a", encoding="utf-8") as fs:
                         fs.write("\n" + add_text)
-                    st.success("Content appended successfully ✅")
+                    st.success("Content appended successfully.")
+                    st.rerun()
                 except Exception as err:
                     st.error(f"An error occurred: {err}")
 
@@ -281,16 +395,14 @@ elif action == "✏️ Update File":
             new_text = st.text_area("New content (replaces everything)", height=180)
             if st.button("Overwrite", type="primary"):
                 try:
-                    path.write_text(new_text)
-                    st.success("File overwritten successfully ✅")
+                    path.write_text(new_text, encoding="utf-8")
+                    st.success("File overwritten successfully.")
+                    st.rerun()
                 except Exception as err:
                     st.error(f"An error occurred: {err}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------
-# DELETE
-# ------------------------------------------------------------------
-elif action == "🗑️ Delete File":
+elif action == "Delete File":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Delete a file")
 
@@ -303,16 +415,13 @@ elif action == "🗑️ Delete File":
         if st.button("Delete File", type="primary", disabled=not confirm):
             try:
                 (STORAGE_DIR / chosen).unlink()
-                st.success(f"'{chosen}' deleted successfully ✅")
+                st.success(f"'{chosen}' deleted successfully.")
                 st.rerun()
             except Exception as err:
                 st.error(f"An error occurred: {err}")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------
-# BROWSE ALL
-# ------------------------------------------------------------------
-elif action == "📁 Browse All Files":
+elif action == "Browse All Files":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("All files")
 
@@ -322,7 +431,7 @@ elif action == "📁 Browse All Files":
         for f in files:
             fc1, fc2, fc3 = st.columns([5, 2, 2])
             with fc1:
-                st.markdown(f"**📄 {f.name}**")
+                st.markdown(f"**{f.name}**")
             with fc2:
                 st.caption(human_size(f.stat().st_size))
             with fc3:
@@ -330,4 +439,4 @@ elif action == "📁 Browse All Files":
             st.divider()
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Built with Python (pathlib, os) + Streamlit — a simple file handling mini-project.")
+st.caption("Built with Python pathlib and Streamlit.")
